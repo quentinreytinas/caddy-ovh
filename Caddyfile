@@ -1,0 +1,101 @@
+# =======================
+# GLOBAL (example home server)
+# =======================
+{
+	email admin@example.com
+
+	# Dé-commente si tu dois faire confiance à des proxys (LAN / VPN).
+	# servers {
+	# 	trusted_proxies static 10.0.0.0/24 192.168.0.0/24
+	# }
+}
+
+# =======================
+# Snippets réutilisables
+# =======================
+
+# TLS OVH (DNS-01)
+(ovh_tls) {
+	tls {
+		dns ovh
+	}
+}
+
+# Sécurité HTTP commune
+(security_headers) {
+	header {
+		X-Frame-Options "SAMEORIGIN"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+		# Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+	}
+}
+
+
+# =======================
+# Application web (HTTP interne)
+# =======================
+app.example.com {
+	import ovh_tls
+	import security_headers
+	encode zstd gzip
+
+	# Le service "app" écoute sur le réseau Docker interne.
+	reverse_proxy http://app:8080 {
+		header_up Host {host}
+		header_up X-Real-IP {client_ip}
+	}
+}
+
+# =======================
+# Portail d'authentification
+# =======================
+auth.example.com {
+	import ovh_tls
+	import security_headers
+	encode zstd gzip
+
+	reverse_proxy http://auth:8000 {
+		header_up Host {host}
+		header_up X-Real-IP {client_ip}
+		header_up X-Forwarded-Proto {scheme}
+	}
+}
+
+# =======================
+# Service avec exigences spécifiques (ex: Vaultwarden)
+# =======================
+vault.example.com {
+	import ovh_tls
+	import security_headers
+	encode zstd gzip
+
+	# Exemple : désactiver certains en-têtes imposés par l'app.
+	header -X-Frame-Options
+	header X-XSS-Protection "0"
+
+	reverse_proxy http://vaultwarden:80 {
+		header_up Host {host}
+		header_up X-Real-IP {client_ip}
+	}
+}
+
+# =======================
+# Backend HTTPS interne (NAS, API, etc.)
+# =======================
+storage.example.com {
+	import ovh_tls
+	import security_headers
+	encode zstd gzip
+
+	# Exemple de proxy vers une cible HTTPS interne.
+	reverse_proxy https://192.0.2.10:5001 {
+		header_up Host storage.example.com
+		header_up X-Real-IP {client_ip}
+
+		transport http {
+			tls_server_name storage.example.com
+		}
+	}
+}
