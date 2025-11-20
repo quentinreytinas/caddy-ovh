@@ -23,9 +23,7 @@ docker buildx build \
 Une fois qu'une release GitHub est publiée (bouton **Publish release** sur GitHub),
 ou qu'un tag `v*` est poussé (ou déclenché manuellement via **Run workflow**),
 le workflow `.github/workflows/release.yml` construit l'image multi-architecture,
-normalise le nom de l'image en minuscule pour éviter les soucis GHCR si
-l'organisation GitHub contient des majuscules, puis la pousse vers
-`ghcr.io/${{ github.repository_owner }}/caddy-ovh` avec le tag
+la pousse vers `ghcr.io/${{ github.repository_owner }}/caddy-ovh` avec le tag
 résolu **et** `latest`, puis ajoute quatre assets au release GitHub pour AMD64 et
 ARM64 :
 
