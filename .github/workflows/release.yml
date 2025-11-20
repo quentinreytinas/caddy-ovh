@@ -1,0 +1,142 @@
+name: Release image
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to build and publish (defaults to ref name)"
+        required: false
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Normalize image name
+        id: image
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          IMAGE_NAME="ghcr.io/${OWNER,,}/caddy-ovh"
+          echo "image_name=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve registry credentials
+        id: auth
+        env:
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          TOKEN="$GHCR_PAT"
+
+          if [ -z "$TOKEN" ]; then
+            TOKEN="$GITHUB_TOKEN"
+            echo "Using GitHub-provided GITHUB_TOKEN for GHCR auth" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Using GHCR_PAT for GHCR auth" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ -z "$TOKEN" ]; then
+            echo "No registry token available" >&2
+            exit 1
+          fi
+
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+          echo "username=${OWNER,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve tag name
+        id: vars
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          elif [ -n "${{ github.event.inputs.tag }}" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            TAG="${{ github.ref_name }}"
+          fi
+
+          if [ -z "$TAG" ]; then
+            echo "Unable to resolve tag name" >&2
+            exit 1
+          fi
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ steps.auth.outputs.username }}
+          password: ${{ steps.auth.outputs.token }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ steps.image.outputs.image_name }}
+          tags: |
+            type=raw,value=${{ steps.vars.outputs.tag }}
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Build OCI archives for release assets
+        env:
+          TAG: ${{ steps.vars.outputs.tag }}
+          IMAGE_NAME: ${{ steps.image.outputs.image_name }}
+        run: |
+          set -euo pipefail
+
+          FILES=()
+          for NAME in "$TAG" latest; do
+            OUTPUT="/tmp/caddy-ovh-${NAME}.tar"
+            docker buildx build \
+              --platform linux/amd64,linux/arm64 \
+              --tag "${IMAGE_NAME}:${NAME}" \
+              --provenance=false \
+              --sbom=false \
+              --output=type=oci,dest="${OUTPUT}" \
+              .
+
+            gzip --force "${OUTPUT}"
+            sha256sum "${OUTPUT}.gz" > "${OUTPUT}.gz.sha256"
+            FILES+=("${OUTPUT}.gz" "${OUTPUT}.gz.sha256")
+          done
+
+          {
+            echo "files<<'EOF'"
+            printf '%s\n' "${FILES[@]}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+        id: archive
+
+      - name: Upload image archive to release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.archive.outputs.files }}
+          tag_name: ${{ steps.vars.outputs.tag }}
