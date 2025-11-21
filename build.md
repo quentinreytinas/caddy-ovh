@@ -18,6 +18,25 @@ docker buildx build \
   .
 ```
 
+## Générer l'image `latest` depuis le repository
+
+Pour construire rapidement l'image locale taguée `latest`, un `Makefile` est
+fourni à la racine du projet :
+
+```bash
+# Build local sans pousser
+make image
+
+# Build multi-architecture et push (nécessite docker buildx configuré)
+make image-multiarch
+```
+
+Le tag utilisé peut être personnalisé via la variable `IMAGE` :
+
+```bash
+make image IMAGE=ghcr.io/moncompte/caddy-ovh:latest
+```
+
 ## Publication automatique sur une release GitHub
 
 Une fois qu'une release GitHub est publiée (bouton **Publish release** sur GitHub),
