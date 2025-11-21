@@ -16,44 +16,15 @@ permissions:
   contents: write
   packages: write
 
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/caddy-ovh
+
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Normalize image name
-        id: image
-        env:
-          OWNER: ${{ github.repository_owner }}
-        run: |
-          IMAGE_NAME="ghcr.io/${OWNER,,}/caddy-ovh"
-          echo "image_name=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
-
-      - name: Resolve registry credentials
-        id: auth
-        env:
-          GHCR_PAT: ${{ secrets.GHCR_PAT }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OWNER: ${{ github.repository_owner }}
-        run: |
-          TOKEN="$GHCR_PAT"
-
-          if [ -z "$TOKEN" ]; then
-            TOKEN="$GITHUB_TOKEN"
-            echo "Using GitHub-provided GITHUB_TOKEN for GHCR auth" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "Using GHCR_PAT for GHCR auth" >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-          if [ -z "$TOKEN" ]; then
-            echo "No registry token available" >&2
-            exit 1
-          fi
-
-          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
-          echo "username=${OWNER,,}" >> "$GITHUB_OUTPUT"
 
       - name: Resolve tag name
         id: vars
@@ -83,15 +54,15 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ steps.auth.outputs.username }}
-          password: ${{ steps.auth.outputs.token }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ steps.image.outputs.image_name }}
+            ${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=${{ steps.vars.outputs.tag }}
             type=raw,value=latest
@@ -108,7 +79,6 @@ jobs:
       - name: Build OCI archives for release assets
         env:
           TAG: ${{ steps.vars.outputs.tag }}
-          IMAGE_NAME: ${{ steps.image.outputs.image_name }}
         run: |
           set -euo pipefail
 

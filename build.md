@@ -23,9 +23,7 @@ docker buildx build \
 Une fois qu'une release GitHub est publiée (bouton **Publish release** sur GitHub),
 ou qu'un tag `v*` est poussé (ou déclenché manuellement via **Run workflow**),
 le workflow `.github/workflows/release.yml` construit l'image multi-architecture,
-normalise le nom de l'image en minuscule pour éviter les soucis GHCR si
-l'organisation GitHub contient des majuscules, puis la pousse vers
-`ghcr.io/${{ github.repository_owner }}/caddy-ovh` avec le tag
+la pousse vers `ghcr.io/${{ github.repository_owner }}/caddy-ovh` avec le tag
 résolu **et** `latest`, puis ajoute quatre assets au release GitHub pour AMD64 et
 ARM64 :
 
@@ -37,8 +35,3 @@ ARM64 :
 Aucune action supplémentaire n'est requise côté utilisateur : publier une release
 ouvre automatiquement ces artefacts pour téléchargement et met à jour l'image sur
 le GitHub Container Registry.
-
-Si l'organisation applique des règles restrictives sur le `GITHUB_TOKEN`, vous
- pouvez fournir un secret `GHCR_PAT` (PAT avec le scope `write:packages`) ; le
- workflow l'utilisera automatiquement pour se connecter à GHCR, sinon il
- basculera sur le `GITHUB_TOKEN` par défaut.
