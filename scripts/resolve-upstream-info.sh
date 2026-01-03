@@ -5,11 +5,7 @@ get_digest() {
   local image=$1
   local digest
 
-  if digest=$(docker buildx imagetools inspect "$image" --format '{{.Digest}}' 2>/dev/null); then
-    :
-  else
-    digest=$(docker buildx imagetools inspect "$image" | awk '/^Digest:/ {print $2; exit}')
-  fi
+  digest=$(docker buildx imagetools inspect "$image" | awk -F': ' '/^Digest:/ {print $2; exit}')
 
   if [ -z "$digest" ]; then
     echo "Unable to resolve digest for $image" >&2
