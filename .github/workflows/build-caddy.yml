@@ -2,7 +2,7 @@ name: Build and Push Caddy OVH
 
 on:
   schedule:
-    - cron: '0 22 * * 0'  # Tous les dimanches à 22h
+    - cron: '0 * * * *'  # Toutes les heures pour suivre les images latest
   workflow_dispatch:      # Permet de lancer manuellement
   push:
     branches:
@@ -26,8 +26,48 @@ jobs:
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Resolve upstream versions
+        id: upstream
+        run: |
+          set -euo pipefail
+          caddy_latest_digest="$(docker buildx imagetools inspect caddy:latest --format '{{.Digest}}')"
+          caddy_builder_digest="$(docker buildx imagetools inspect caddy:builder --format '{{.Digest}}')"
+          ovh_version="$(git ls-remote --tags https://github.com/caddy-dns/ovh.git \
+            | awk -F/ '/refs\/tags\/v?[0-9]/{print $3}' \
+            | sort -V \
+            | tail -n1)"
+          if [ -z "${ovh_version}" ]; then
+            ovh_version="$(git ls-remote https://github.com/caddy-dns/ovh.git HEAD | awk '{print $1}')"
+          fi
+          echo "caddy_latest_digest=${caddy_latest_digest}" >> "$GITHUB_OUTPUT"
+          echo "caddy_builder_digest=${caddy_builder_digest}" >> "$GITHUB_OUTPUT"
+          echo "ovh_version=${ovh_version}" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether rebuild is needed
+        id: check
+        run: |
+          set -euo pipefail
+          image="ghcr.io/${{ github.repository_owner }}/caddy-ovh:latest"
+          if docker pull "${image}"; then
+            existing_caddy_latest="$(docker image inspect "${image}" --format '{{ index .Config.Labels "org.opencontainers.image.base.caddy.latest" }}')"
+            existing_caddy_builder="$(docker image inspect "${image}" --format '{{ index .Config.Labels "org.opencontainers.image.base.caddy.builder" }}')"
+            existing_ovh_version="$(docker image inspect "${image}" --format '{{ index .Config.Labels "org.opencontainers.image.base.ovh.version" }}')"
+          else
+            existing_caddy_latest=""
+            existing_caddy_builder=""
+            existing_ovh_version=""
+          fi
+          if [ "${existing_caddy_latest}" = "${{ steps.upstream.outputs.caddy_latest_digest }}" ] \
+            && [ "${existing_caddy_builder}" = "${{ steps.upstream.outputs.caddy_builder_digest }}" ] \
+            && [ "${existing_ovh_version}" = "${{ steps.upstream.outputs.ovh_version }}" ]; then
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+          fi
       
       - name: Login to GHCR
+        if: steps.check.outputs.should_build == 'true'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -36,21 +76,27 @@ jobs:
 
       - name: Docker metadata
         id: meta
+        if: steps.check.outputs.should_build == 'true'
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository_owner }}/caddy-ovh
           tags: |
             type=raw,value=latest
+            type=raw,value=build-${{ github.run_number }}
             type=sha
 
       - name: Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
           pull: true
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          labels: |
+            ${{ steps.meta.outputs.labels }}
+            org.opencontainers.image.base.caddy.latest=${{ steps.upstream.outputs.caddy_latest_digest }}
+            org.opencontainers.image.base.caddy.builder=${{ steps.upstream.outputs.caddy_builder_digest }}
+            org.opencontainers.image.base.ovh.version=${{ steps.upstream.outputs.ovh_version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
