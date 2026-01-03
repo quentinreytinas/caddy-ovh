@@ -29,20 +29,7 @@ jobs:
 
       - name: Resolve upstream versions
         id: upstream
-        run: |
-          set -euo pipefail
-          caddy_latest_digest="$(docker buildx imagetools inspect caddy:latest --format '{{.Digest}}')"
-          caddy_builder_digest="$(docker buildx imagetools inspect caddy:builder --format '{{.Digest}}')"
-          ovh_version="$(git ls-remote --tags https://github.com/caddy-dns/ovh.git \
-            | awk -F/ '/refs\/tags\/v?[0-9]/{print $3}' \
-            | sort -V \
-            | tail -n1)"
-          if [ -z "${ovh_version}" ]; then
-            ovh_version="$(git ls-remote https://github.com/caddy-dns/ovh.git HEAD | awk '{print $1}')"
-          fi
-          echo "caddy_latest_digest=${caddy_latest_digest}" >> "$GITHUB_OUTPUT"
-          echo "caddy_builder_digest=${caddy_builder_digest}" >> "$GITHUB_OUTPUT"
-          echo "ovh_version=${ovh_version}" >> "$GITHUB_OUTPUT"
+        run: ./scripts/resolve-upstream-info.sh
 
       - name: Check whether rebuild is needed
         id: check
