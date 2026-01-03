@@ -1,0 +1,42 @@
+name: Keepalive
+
+on:
+  schedule:
+    - cron: "0 6 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Update keepalive stamp
+        run: |
+          set -euo pipefail
+          stamp="$(date -u +%Y-%m-%d)"
+          file=".github/keepalive.txt"
+          if [ -f "$file" ] && [ "$(cat "$file")" = "$stamp" ]; then
+            echo "Keepalive already up to date."
+            exit 0
+          fi
+          echo "$stamp" > "$file"
+
+      - name: Commit and push
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/keepalive.txt
+          git commit -m "chore: keepalive"
+          git push
