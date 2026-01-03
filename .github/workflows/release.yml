@@ -100,7 +100,7 @@ jobs:
           done
 
           {
-            echo "files<<'EOF'"
+            echo "files<<EOF"
             printf '%s\n' "${FILES[@]}"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
