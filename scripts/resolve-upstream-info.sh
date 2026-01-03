@@ -8,7 +8,7 @@ get_digest() {
   if digest=$(docker buildx imagetools inspect "$image" --format '{{.Digest}}' 2>/dev/null); then
     :
   else
-    digest=$(docker buildx imagetools inspect "$image" --format '{{.Manifest.Digest}}')
+    digest=$(docker buildx imagetools inspect "$image" | awk '/^Digest:/ {print $2; exit}')
   fi
 
   if [ -z "$digest" ]; then
