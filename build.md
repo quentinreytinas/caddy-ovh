@@ -54,3 +54,11 @@ ARM64 :
 Aucune action supplémentaire n'est requise côté utilisateur : publier une release
 ouvre automatiquement ces artefacts pour téléchargement et met à jour l'image sur
 le GitHub Container Registry.
+
+## Publication automatique sur les builds réguliers
+
+Le workflow `.github/workflows/build-caddy.yml` (cron, push sur `main` ou exécution
+manuelle) publie systématiquement deux tags :
+
+- `latest`
+- `build-<run_number>` (numéro de build GitHub Actions)
