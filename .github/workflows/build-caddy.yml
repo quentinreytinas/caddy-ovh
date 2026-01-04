@@ -75,6 +75,7 @@ jobs:
             type=sha
 
       - name: Build and push
+        if: steps.check.outputs.should_build == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
