@@ -9,6 +9,7 @@ on:
       - main
     paths:
       - 'Dockerfile'
+      - '.github/workflows/build-caddy.yml'
 
 jobs:
   build:
