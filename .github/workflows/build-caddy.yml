@@ -86,6 +86,10 @@ jobs:
           tags: |
             ${{ steps.meta.outputs.tags }}
             ${{ env.IMAGE_NAME }}:latest
-          labels: ${{ steps.meta.outputs.labels }}
+          labels: |
+            ${{ steps.meta.outputs.labels }}
+            org.opencontainers.image.base.caddy.latest=${{ steps.upstream.outputs.caddy_latest_digest }}
+            org.opencontainers.image.base.caddy.builder=${{ steps.upstream.outputs.caddy_builder_digest }}
+            org.opencontainers.image.base.ovh.version=${{ steps.upstream.outputs.ovh_version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
