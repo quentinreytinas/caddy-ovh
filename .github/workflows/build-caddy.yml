@@ -2,7 +2,7 @@ name: Build and Push Caddy OVH
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Toutes les heures pour suivre les images latest
+    - cron: '0 6 * * 1'  # Toutes les heures pour suivre les images latest
   workflow_dispatch:      # Permet de lancer manuellement
   push:
     branches:
