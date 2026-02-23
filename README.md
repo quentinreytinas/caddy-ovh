@@ -1,8 +1,14 @@
 # caddy-ovh
 
-Image Docker **Caddy** avec le plugin DNS **OVH** pour le challenge DNS-01.
+Image Docker **Caddy** avec le plugin DNS **OVH** (DNS-01) et le plugin
+**Sablier** (start/stop de services à la demande).
 Le dépôt fournit une stack locale, un exemple de configuration et des scripts
 utiles.
+
+## Modules inclus
+
+- `dns.providers.ovh`
+- `http.handlers.sablier`
 
 ## Démarrage rapide
 

@@ -1,5 +1,10 @@
 # Exemple de build/push multi-arch vers GHCR
 
+L'image publiée inclut les deux modules Caddy suivants:
+
+- `dns.providers.ovh` (DNS-01 OVH)
+- `http.handlers.sablier` (wake/sleep des services)
+
 ```bash
 export GH_USERNAME="your-gh-username"
 export GH_TOKEN="ghp_XXXX"          # Token avec scope "write:packages"
