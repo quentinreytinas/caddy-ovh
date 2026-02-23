@@ -25,14 +25,24 @@ if [ -z "${ovh_version}" ]; then
   ovh_version="$(git ls-remote https://github.com/caddy-dns/ovh.git HEAD | awk '{print $1}')"
 fi
 
+sablier_version="$(git ls-remote --tags https://github.com/sablierapp/sablier-caddy-plugin.git \
+  | awk -F/ '/refs\/tags\/v?[0-9]/{print $3}' \
+  | sort -V \
+  | tail -n1)"
+if [ -z "${sablier_version}" ]; then
+  sablier_version="$(git ls-remote https://github.com/sablierapp/sablier-caddy-plugin.git HEAD | awk '{print $1}')"
+fi
+
 if [ -n "${GITHUB_OUTPUT:-}" ]; then
   {
     echo "caddy_latest_digest=${caddy_latest_digest}"
     echo "caddy_builder_digest=${caddy_builder_digest}"
     echo "ovh_version=${ovh_version}"
+    echo "sablier_version=${sablier_version}"
   } >> "$GITHUB_OUTPUT"
 else
   echo "caddy_latest_digest=${caddy_latest_digest}"
   echo "caddy_builder_digest=${caddy_builder_digest}"
   echo "ovh_version=${ovh_version}"
+  echo "sablier_version=${sablier_version}"
 fi

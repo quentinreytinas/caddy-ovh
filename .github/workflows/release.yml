@@ -86,6 +86,7 @@ jobs:
             org.opencontainers.image.base.caddy.latest=${{ steps.upstream.outputs.caddy_latest_digest }}
             org.opencontainers.image.base.caddy.builder=${{ steps.upstream.outputs.caddy_builder_digest }}
             org.opencontainers.image.base.ovh.version=${{ steps.upstream.outputs.ovh_version }}
+            org.opencontainers.image.base.sablier.version=${{ steps.upstream.outputs.sablier_version }}
 
       - name: Build OCI archives for release assets
         env:

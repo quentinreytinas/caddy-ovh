@@ -43,14 +43,17 @@ jobs:
             existing_caddy_latest="$(docker image inspect "${image}" --format '{{ index .Config.Labels "org.opencontainers.image.base.caddy.latest" }}')"
             existing_caddy_builder="$(docker image inspect "${image}" --format '{{ index .Config.Labels "org.opencontainers.image.base.caddy.builder" }}')"
             existing_ovh_version="$(docker image inspect "${image}" --format '{{ index .Config.Labels "org.opencontainers.image.base.ovh.version" }}')"
+            existing_sablier_version="$(docker image inspect "${image}" --format '{{ index .Config.Labels "org.opencontainers.image.base.sablier.version" }}')"
           else
             existing_caddy_latest=""
             existing_caddy_builder=""
             existing_ovh_version=""
+            existing_sablier_version=""
           fi
           if [ "${existing_caddy_latest}" = "${{ steps.upstream.outputs.caddy_latest_digest }}" ] \
             && [ "${existing_caddy_builder}" = "${{ steps.upstream.outputs.caddy_builder_digest }}" ] \
-            && [ "${existing_ovh_version}" = "${{ steps.upstream.outputs.ovh_version }}" ]; then
+            && [ "${existing_ovh_version}" = "${{ steps.upstream.outputs.ovh_version }}" ] \
+            && [ "${existing_sablier_version}" = "${{ steps.upstream.outputs.sablier_version }}" ]; then
             echo "should_build=false" >> "$GITHUB_OUTPUT"
           else
             echo "should_build=true" >> "$GITHUB_OUTPUT"
@@ -91,5 +94,6 @@ jobs:
             org.opencontainers.image.base.caddy.latest=${{ steps.upstream.outputs.caddy_latest_digest }}
             org.opencontainers.image.base.caddy.builder=${{ steps.upstream.outputs.caddy_builder_digest }}
             org.opencontainers.image.base.ovh.version=${{ steps.upstream.outputs.ovh_version }}
+            org.opencontainers.image.base.sablier.version=${{ steps.upstream.outputs.sablier_version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
