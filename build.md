@@ -60,10 +60,40 @@ Aucune action supplémentaire n'est requise côté utilisateur : publier une rel
 ouvre automatiquement ces artefacts pour téléchargement et met à jour l'image sur
 le GitHub Container Registry.
 
-## Publication automatique sur les builds réguliers
+## Mise à jour automatique sur les nouvelles versions officielles de Caddy
 
-Le workflow `.github/workflows/build-caddy.yml` (cron, push sur `main` ou exécution
-manuelle) publie systématiquement deux tags :
+Le workflow `.github/workflows/build-caddy.yml` récupère automatiquement la
+**dernière release officielle** de `caddyserver/caddy` via l'API GitHub, puis
+reconstruit l'image `caddy-ovh` avec cette version (base builder + runtime).
 
-- `latest`
-- `build-<run_number>` (numéro de build GitHub Actions)
+Déclencheurs :
+
+- toutes les 12h (cron) ;
+- manuellement via **Run workflow** ;
+- à chaque modification du `Dockerfile` ou du workflow lui-même sur `main`.
+
+Tags publiés sur GHCR à chaque build :
+
+- `latest` ;
+- `<version-caddy>` (exemple : `2.11.2`) ;
+- `caddy-v<version>` (exemple : `caddy-v2.11.2`) ;
+- `sha-<commit>`.
+
+Ainsi, `ghcr.io/<owner>/caddy-ovh:latest` suit automatiquement l'évolution de
+Caddy officiel sans action manuelle.
+
+## Mise à jour automatique du conteneur en production
+
+Le `docker-compose.yaml` inclut un service `watchtower` qui vérifie toutes les
+6 heures les nouvelles images et redémarre automatiquement `caddy-ovh` quand
+une nouvelle image `latest` est disponible sur GHCR.
+
+Concrètement :
+
+- le workflow CI publie `ghcr.io/<owner>/caddy-ovh:latest` à chaque build ;
+- `watchtower` détecte la nouvelle image ;
+- le conteneur `caddy-ovh` est recréé automatiquement avec la version à jour.
+
+Si vous ne voulez pas l'auto-update runtime, supprimez simplement le service
+`watchtower` du compose.
+
