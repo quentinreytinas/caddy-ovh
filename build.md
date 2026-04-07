@@ -77,3 +77,18 @@ Tags publiés sur GHCR à chaque build :
 Ainsi, `ghcr.io/<owner>/caddy-ovh:latest` suit automatiquement l'évolution de
 Caddy officiel sans action manuelle.
 
+## Mise à jour automatique du conteneur en production
+
+Le `docker-compose.yaml` inclut un service `watchtower` qui vérifie toutes les
+6 heures les nouvelles images et redémarre automatiquement `caddy-ovh` quand
+une nouvelle image `latest` est disponible sur GHCR.
+
+Concrètement :
+
+- le workflow CI publie `ghcr.io/<owner>/caddy-ovh:latest` à chaque build ;
+- `watchtower` détecte la nouvelle image ;
+- le conteneur `caddy-ovh` est recréé automatiquement avec la version à jour.
+
+Si vous ne voulez pas l'auto-update runtime, supprimez simplement le service
+`watchtower` du compose.
+
