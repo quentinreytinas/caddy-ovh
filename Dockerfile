@@ -1,12 +1,14 @@
 # Dockerfile
-FROM caddy:builder AS builder
+ARG CADDY_VERSION=latest
+
+FROM caddy:${CADDY_VERSION}-builder AS builder
 
 # Build Caddy avec le module OVH
 RUN xcaddy build \
     --with github.com/caddy-dns/ovh
 
 # Image finale légère
-FROM caddy:latest
+FROM caddy:${CADDY_VERSION}
 
 # Copie le binaire custom
 COPY --from=builder /usr/bin/caddy /usr/bin/caddy

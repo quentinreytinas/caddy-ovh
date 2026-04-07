@@ -54,3 +54,26 @@ ARM64 :
 Aucune action supplémentaire n'est requise côté utilisateur : publier une release
 ouvre automatiquement ces artefacts pour téléchargement et met à jour l'image sur
 le GitHub Container Registry.
+
+## Mise à jour automatique sur les nouvelles versions officielles de Caddy
+
+Le workflow `.github/workflows/build-caddy.yml` récupère automatiquement la
+**dernière release officielle** de `caddyserver/caddy` via l'API GitHub, puis
+reconstruit l'image `caddy-ovh` avec cette version (base builder + runtime).
+
+Déclencheurs :
+
+- toutes les 12h (cron) ;
+- manuellement via **Run workflow** ;
+- à chaque modification du `Dockerfile` ou du workflow lui-même sur `main`.
+
+Tags publiés sur GHCR à chaque build :
+
+- `latest` ;
+- `<version-caddy>` (exemple : `2.11.2`) ;
+- `caddy-v<version>` (exemple : `caddy-v2.11.2`) ;
+- `sha-<commit>`.
+
+Ainsi, `ghcr.io/<owner>/caddy-ovh:latest` suit automatiquement l'évolution de
+Caddy officiel sans action manuelle.
+
