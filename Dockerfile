@@ -1,5 +1,7 @@
 # Dockerfile
-ARG CADDY_VERSION=latest
+# Utiliser une version explicite de Caddy (pas 'latest' qui n'a plus de tag -builder)
+# Le workflow CI résout automatiquement la dernière version upstream
+ARG CADDY_VERSION=2.11.2
 
 FROM caddy:${CADDY_VERSION}-builder AS builder
 
