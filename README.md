@@ -40,3 +40,30 @@ sont documentées dans `build.md`.
 
 - `ufw.md` : règles UFW pour un serveur perso.
 - `adresses_ip.md` : commandes pour diagnostiquer les IP locales.
+
+## Exploitation Sablier (memo)
+
+Sablier n'arrete que les conteneurs explicitement references dans le `Caddyfile`
+via les directives `sablier ... names ...`.
+
+Workflow recommande:
+
+1. Lister les conteneurs:
+
+```bash
+docker ps --format '{{.Names}}'
+```
+
+2. Ajouter/retirer les `names` dans le bloc Sablier cible.
+3. Ajuster `session_duration` (`30m`, `2h`, `4h`, etc.).
+4. Valider/recharger Caddy:
+
+```bash
+docker exec caddy caddy validate --config /etc/caddy/Caddyfile
+docker exec caddy caddy reload --config /etc/caddy/Caddyfile
+```
+
+Bonnes pratiques:
+
+- Ne pas inclure les services domotiques critiques (Home Assistant, Zigbee2MQTT, Node-RED).
+- Garder `blocking.timeout` coherent avec le temps de warmup des modeles.
